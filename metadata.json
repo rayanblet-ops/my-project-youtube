@@ -1,0 +1,7 @@
+{
+  "name": "YuTube Clone",
+  "description": "A high-fidelity YouTube clone built with React, TypeScript, and Tailwind CSS.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
