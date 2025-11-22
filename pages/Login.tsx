@@ -81,7 +81,7 @@ export const Login: React.FC = () => {
       } else if (error.code === 'auth/popup-blocked') {
         setError('Всплывающее окно заблокировано. Разрешите всплывающие окна для этого сайта в настройках браузера.');
       } else if (error.code === 'permission-denied' || error.message?.includes('permission')) {
-        setError('Ошибка доступа к базе данных. Настройте правила Firestore (см. FIREBASE_RULES_FIX.md)');
+        setError('Ошибка доступа к базе данных. Проверьте правила безопасности Firestore в Firebase Console.');
       } else if (error.message) {
         setError(error.message);
       } else {

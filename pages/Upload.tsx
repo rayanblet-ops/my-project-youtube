@@ -93,12 +93,8 @@ export const Upload: React.FC = () => {
   };
 
   const handlePublish = async () => {
-    if (!file || isUploading) {
-      console.log('Upload blocked:', { file: !!file, isUploading });
-      return;
-    }
+    if (!file || isUploading) return;
 
-    console.log('Starting upload...', { fileName: file.name, fileSize: file.size, user: user.name });
     setIsUploading(true);
     setProgress(0);
 
@@ -118,8 +114,6 @@ export const Upload: React.FC = () => {
         likes: '0'
       };
 
-      console.log('Video data prepared:', videoData);
-      console.log('User info:', { name: user.name, avatar: user.avatarUrl });
       setProgress(5);
 
       // Проверяем размер файла
@@ -132,17 +126,10 @@ export const Upload: React.FC = () => {
       }
 
       // Загружаем файл в Firestore (как base64)
-      // Прогресс обновляется в реальном времени через callback
-      console.log('Starting Firestore upload (base64)...');
       const videoId = await videoServiceFirestore.uploadVideo(file, videoData, (uploadProgress) => {
-        // Обновляем прогресс загрузки файла (5-90%)
         const progress = 5 + (uploadProgress * 0.85);
-        const finalProgress = Math.min(progress, 90);
-        setProgress(finalProgress);
-        console.log('Upload progress callback:', uploadProgress + '%', '-> UI:', finalProgress + '%');
+        setProgress(Math.min(progress, 90));
       });
-      
-      console.log('Upload completed, video ID:', videoId);
       
       // Финальный прогресс - создание записи в Firestore
       setProgress(100);
@@ -153,36 +140,18 @@ export const Upload: React.FC = () => {
       }, 500);
     } catch (error: any) {
       console.error('Error uploading video:', error);
-      console.error('Error details:', {
-        code: error?.code,
-        message: error?.message,
-        stack: error?.stack,
-        name: error?.name,
-        serverResponse: error?.serverResponse
-      });
       
       let errorMessage = "Ошибка при загрузке видео. Попробуйте еще раз.";
       
-      if (error?.code === 'storage/unauthorized' || error?.code === 'storage/canceled') {
-        errorMessage = "Ошибка: Нет доступа к хранилищу. Проверьте правила безопасности Firebase Storage. См. файл firebase-rules.md для инструкций.";
-      } else if (error?.code === 'permission-denied') {
-        errorMessage = "Ошибка: Нет доступа к базе данных. Проверьте правила безопасности Firestore. Убедитесь, что правила разрешают запись для авторизованных пользователей.";
+      if (error?.code === 'permission-denied') {
+        errorMessage = "Ошибка: Нет доступа к базе данных. Проверьте правила безопасности Firestore.";
       } else if (error?.code === 'storage/quota-exceeded') {
         errorMessage = "Ошибка: Превышен лимит хранилища.";
-      } else if (error?.code === 'storage/unknown') {
-        errorMessage = "Ошибка: Неизвестная ошибка при загрузке. Проверьте консоль браузера (F12) для деталей.";
       } else if (error?.message) {
         errorMessage = `Ошибка: ${error.message}`;
       }
       
-      console.error('Final error message:', errorMessage);
-      alert(
-        errorMessage + 
-        '\n\n⚠️ ВАЖНО: Скорее всего проблема в правилах безопасности Firebase Storage.' +
-        '\n\nОткройте файл FIREBASE_SETUP_INSTRUCTIONS.md для подробных инструкций.' +
-        '\n\nКратко: Перейдите в Firebase Console > Storage > Rules и настройте правила безопасности.' +
-        '\n\nПроверьте консоль браузера (F12) для деталей.'
-      );
+      alert(errorMessage);
       setIsUploading(false);
       setProgress(0);
     }

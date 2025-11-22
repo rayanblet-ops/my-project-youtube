@@ -50,14 +50,11 @@ export const videoServiceFirestore = {
         throw new Error(`Файл слишком большой (${Math.round(file.size / 1024)}KB). Максимальный размер: ${Math.round(MAX_FILE_SIZE / 1024)}KB. Для больших файлов нужен Firebase Storage.`);
       }
 
-      console.log('Converting file to base64...');
       if (onProgress) onProgress(10);
 
       // Конвертируем файл в base64
       const base64Data = await this.fileToBase64(file);
       if (onProgress) onProgress(50);
-
-      console.log('Base64 conversion completed, size:', base64Data.length);
 
       const isImage = file.type.startsWith('image/');
       const dataUrl = `data:${file.type};base64,${base64Data}`;
@@ -65,7 +62,6 @@ export const videoServiceFirestore = {
       if (onProgress) onProgress(80);
 
       // Создаем запись в Firestore
-      console.log('Creating Firestore document...');
       const docRef = await addDoc(collection(db, VIDEOS_COLLECTION), {
         ...videoData,
         videoUrl: dataUrl, // Сохраняем base64 данные
@@ -82,7 +78,6 @@ export const videoServiceFirestore = {
 
       if (onProgress) onProgress(100);
 
-      console.log('Video uploaded successfully, ID:', docRef.id);
       return docRef.id;
     } catch (error: any) {
       console.error('Error uploading video:', error);

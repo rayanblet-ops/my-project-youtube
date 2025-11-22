@@ -18,8 +18,6 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize services
 export const db = getFirestore(app);
-// Инициализируем Storage - если bucket не создан, будет ошибка при использовании
-// Нужно создать bucket через Google Cloud Console или Firebase Console
 export const storage = getStorage(app);
 export const auth = getAuth(app);
 

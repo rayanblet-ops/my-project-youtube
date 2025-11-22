@@ -80,13 +80,10 @@ export const authService = {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       
-      console.log('Google sign-in successful, user ID:', user.uid);
-      
       // Проверяем, есть ли профиль в Firestore
       try {
         const existingProfile = await this.getUserProfile(user.uid);
         if (!existingProfile) {
-          console.log('Profile not found, creating new profile...');
           // Создаем профиль для нового пользователя
           const profile: UserProfile = {
             name: user.displayName || 'Пользователь',
@@ -115,17 +112,11 @@ export const authService = {
           };
           
           await this.setUserProfile(user.uid, profile);
-          console.log('Profile created successfully');
-        } else {
-          console.log('Profile found, using existing profile');
         }
       } catch (profileError: any) {
         console.error('Error with user profile:', profileError);
         // Если ошибка с профилем, но пользователь авторизован - продолжаем
         if (profileError?.code === 'permission-denied') {
-          console.error('⚠️ ОШИБКА: Правила Firestore блокируют доступ к коллекции "users"!');
-          console.error('Настройте правила в Firebase Console > Firestore Database > Rules');
-          console.error('См. файл FIREBASE_RULES_FIX.md для инструкций');
           // Продолжаем, но пользователь может не иметь профиля
         } else {
           // Для других ошибок пробрасываем дальше
@@ -181,10 +172,6 @@ export const authService = {
       return null;
     } catch (error: any) {
       console.error('Error getting user profile:', error);
-      if (error?.code === 'permission-denied') {
-        console.error('⚠️ ОШИБКА ПРАВИЛ FIRESTORE! Настройте правила для коллекции "users" в Firebase Console!');
-        console.error('См. файл FIREBASE_RULES_FIX.md для инструкций');
-      }
       return null;
     }
   },
@@ -196,11 +183,6 @@ export const authService = {
       await setDoc(docRef, profile, { merge: true });
     } catch (error: any) {
       console.error('Error setting user profile:', error);
-      if (error?.code === 'permission-denied') {
-        console.error('⚠️ ОШИБКА ПРАВИЛ FIRESTORE! Настройте правила для коллекции "users" в Firebase Console!');
-        console.error('См. файл FIREBASE_RULES_FIX.md для инструкций');
-        throw new Error('Нет доступа к базе данных. Настройте правила Firestore для коллекции "users". См. FIREBASE_RULES_FIX.md');
-      }
       throw error;
     }
   },
