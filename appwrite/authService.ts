@@ -137,8 +137,9 @@ export const authService = {
           }
         } catch (searchError: any) {
           const searchMsg = String(searchError.message || '').toLowerCase();
-          if (searchMsg.includes('failed to fetch') || searchMsg.includes('network error') || searchError.code === 'ERR_NETWORK' || searchError.name === 'TypeError') {
-            throw new Error('Ошибка подключения к серверу. Проверьте интернет-соединение.');
+          if (searchMsg.includes('failed to fetch') || searchMsg.includes('network error') || searchError.code === 'ERR_NETWORK' || searchError.name === 'TypeError' || searchMsg.includes('cors') || searchMsg.includes('cross-origin')) {
+            const currentDomain = window.location.origin;
+            throw new Error(`Ошибка подключения к серверу. Добавьте домен "${currentDomain}" в настройки CORS Appwrite Dashboard: Settings → Webhooks → разрешенные домены.`);
           }
           if (searchError.code === 401 || searchError.code === 403) {
             throw new Error('Нет доступа к базе данных. Проверьте настройки прав доступа в Appwrite Dashboard: Settings → Permissions → Read должно быть "Any" или "Users".');
@@ -166,8 +167,9 @@ export const authService = {
       const errorMessage = String(error.message || '').toLowerCase();
       const errorCode = error.code;
       
-      if (errorMessage.includes('failed to fetch') || errorMessage.includes('network error') || errorMessage.includes('networkerror') || error.code === 'ERR_NETWORK' || error.name === 'TypeError') {
-        throw new Error('Ошибка подключения к серверу. Проверьте интернет-соединение и настройки Appwrite.');
+      if (errorMessage.includes('failed to fetch') || errorMessage.includes('network error') || errorMessage.includes('networkerror') || error.code === 'ERR_NETWORK' || error.name === 'TypeError' || errorMessage.includes('cors') || errorMessage.includes('cross-origin')) {
+        const currentDomain = window.location.origin;
+        throw new Error(`Ошибка подключения к серверу. Добавьте домен "${currentDomain}" в настройки CORS Appwrite Dashboard: Settings → Webhooks → разрешенные домены.`);
       }
       
       if (errorCode === 401) {

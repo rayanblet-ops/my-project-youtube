@@ -47,8 +47,9 @@ export const Login: React.FC = () => {
       const errorStr = String(errorMsg).toLowerCase();
       
       if (isLogin) {
-        if (errorStr.includes('failed to fetch') || errorStr.includes('network error') || errorStr.includes('networkerror') || error.code === 'ERR_NETWORK' || error.name === 'TypeError') {
-          errorMessage = 'Ошибка подключения. Проверьте интернет-соединение и настройки Appwrite.';
+        if (errorStr.includes('failed to fetch') || errorStr.includes('network error') || errorStr.includes('networkerror') || error.code === 'ERR_NETWORK' || error.name === 'TypeError' || errorStr.includes('cors') || errorStr.includes('cross-origin')) {
+          const currentDomain = window.location.origin;
+          errorMessage = `Ошибка подключения. Добавьте домен "${currentDomain}" в настройки CORS Appwrite Dashboard: Settings → Webhooks → разрешенные домены.`;
         } else if (error.code === 401 || errorStr.includes('invalid credentials') || errorStr.includes('invalid password') || errorStr.includes('неверный email или пароль')) {
           errorMessage = 'Пользователь не найден или неверный пароль';
         } else if (error.code === 400 || errorStr.includes('invalid email')) {
@@ -67,8 +68,9 @@ export const Login: React.FC = () => {
           errorMessage = errorMsg || 'Произошла ошибка при входе';
         }
       } else {
-        if (errorStr.includes('failed to fetch') || errorStr.includes('network error') || errorStr.includes('networkerror') || error.code === 'ERR_NETWORK' || error.name === 'TypeError') {
-          errorMessage = 'Ошибка подключения. Проверьте интернет-соединение и настройки Appwrite.';
+        if (errorStr.includes('failed to fetch') || errorStr.includes('network error') || errorStr.includes('networkerror') || error.code === 'ERR_NETWORK' || error.name === 'TypeError' || errorStr.includes('cors') || errorStr.includes('cross-origin')) {
+          const currentDomain = window.location.origin;
+          errorMessage = `Ошибка подключения. Добавьте домен "${currentDomain}" в настройки CORS Appwrite Dashboard: Settings → Webhooks → разрешенные домены.`;
         } else if (error.code === 409 || errorStr.includes('already exists') || errorStr.includes('already registered')) {
           errorMessage = 'Этот email уже используется';
         } else if (error.code === 400) {
