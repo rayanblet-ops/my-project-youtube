@@ -8,8 +8,8 @@ interface CategoryPillsProps {
 
 export const CategoryPills: React.FC<CategoryPillsProps> = ({ selectedCategory, onSelect }) => {
   return (
-    <div className="sticky top-14 z-30 bg-white/95 dark:bg-yt-base/95 backdrop-blur-sm w-full border-b border-gray-200/0 pb-3 pt-3 px-4 transition-colors duration-300">
-      <div className="flex gap-3 overflow-x-auto no-scrollbar w-full">
+    <div className="sticky top-14 z-30 bg-white/95 dark:bg-yt-base/95 backdrop-blur-sm w-full border-b border-gray-200/0 pb-2 sm:pb-3 pt-2 sm:pt-3 px-2 sm:px-4 transition-colors duration-300">
+      <div className="flex gap-2 sm:gap-3 overflow-x-auto no-scrollbar w-full">
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}

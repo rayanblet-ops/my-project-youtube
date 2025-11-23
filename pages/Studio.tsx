@@ -5,8 +5,8 @@ import { MOCK_ANALYTICS } from '../constants';
 import { Link } from 'react-router-dom';
 import { useUser } from '../UserContext';
 import { Video, Comment } from '../types';
-import { videoServiceFirestore } from '../firebase/videoServiceFirestore';
-import { commentService } from '../firebase/commentService';
+import { videoService } from '../appwrite/videoService';
+import { commentService } from '../appwrite/commentService';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
@@ -29,7 +29,7 @@ export const Studio: React.FC = () => {
   const loadData = async () => {
     try {
       // Load Videos
-      const loadedVideos = await videoServiceFirestore.getVideosByChannel(user.name);
+      const loadedVideos = await videoService.getVideosByChannel(user.name);
       setVideos(loadedVideos);
 
       // Load Comments for user's videos
@@ -50,7 +50,7 @@ export const Studio: React.FC = () => {
         try {
           const videoToDelete = videos.find(v => v.id === id);
           if (videoToDelete) {
-            await videoServiceFirestore.deleteVideo(id, videoToDelete.videoUrl, videoToDelete.videoPath);
+            await videoService.deleteVideo(id, videoToDelete.videoUrl, videoToDelete.videoPath);
             const updatedVideos = videos.filter(v => v.id !== id);
             setVideos(updatedVideos);
             
@@ -65,17 +65,15 @@ export const Studio: React.FC = () => {
     }
   };
 
-  const handleDeleteComment = (commentId: string) => {
+  const handleDeleteComment = async (commentId: string) => {
     if (window.confirm("Удалить этот комментарий?")) {
-        const updatedComments = comments.filter(c => c.id !== commentId);
-        setComments(updatedComments);
-        
-        // Update storage
-        const storedComments = localStorage.getItem('yt_comments');
-        if (storedComments) {
-            const all = JSON.parse(storedComments) as Comment[];
-            const newAll = all.filter(c => c.id !== commentId);
-            localStorage.setItem('yt_comments', JSON.stringify(newAll));
+        try {
+          await commentService.deleteComment(commentId);
+          const updatedComments = comments.filter(c => c.id !== commentId);
+          setComments(updatedComments);
+        } catch (error) {
+          console.error('Error deleting comment:', error);
+          alert('Ошибка при удалении комментария');
         }
     }
   };

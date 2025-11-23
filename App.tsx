@@ -34,7 +34,7 @@ const Layout = ({ isSidebarOpen, toggleSidebar, isDarkMode, toggleTheme }: any) 
       <div className="flex flex-1 overflow-hidden h-[calc(100vh-56px)]">
         <Sidebar isOpen={isSidebarOpen} />
         <main 
-          className={`flex-1 overflow-y-auto transition-all duration-200 ${isSidebarOpen ? 'ml-0 sm:ml-60' : 'ml-0 sm:ml-[72px]'}`}
+          className={`flex-1 overflow-y-auto overflow-x-hidden transition-all duration-200 ${isSidebarOpen ? 'ml-0 sm:ml-60' : 'ml-0 sm:ml-[72px]'}`}
         >
           <Outlet />
         </main>

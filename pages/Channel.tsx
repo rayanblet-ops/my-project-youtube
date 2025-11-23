@@ -5,8 +5,8 @@ import { MOCK_CHANNEL } from '../constants';
 import { CheckCircle2, ChevronRight, Camera, Trash2, AlertTriangle } from 'lucide-react';
 import { Video, Comment } from '../types';
 import { useUser } from '../UserContext';
-import { videoServiceFirestore } from '../firebase/videoServiceFirestore';
-import { commentService } from '../firebase/commentService';
+import { videoService } from '../appwrite/videoService';
+import { commentService } from '../appwrite/commentService';
 
 // --- Local Component: Delete Confirmation Modal ---
 const DeleteModal: React.FC<{ 
@@ -202,10 +202,10 @@ export const Channel: React.FC = () => {
     const loadVideos = async () => {
       try {
         if (isMyChannel) {
-          const allVideos = await videoServiceFirestore.getVideosByChannel(user.name);
+          const allVideos = await videoService.getVideosByChannel(user.name);
           setVideos(allVideos);
         } else {
-          const allVideos = await videoServiceFirestore.getAllVideos();
+          const allVideos = await videoService.getAllVideos();
           setVideos(allVideos);
         }
       } catch (error) {
@@ -228,7 +228,7 @@ export const Channel: React.FC = () => {
     try {
       const videoToDeleteObj = videos.find(v => v.id === videoToDelete);
       if (videoToDeleteObj) {
-        await videoServiceFirestore.deleteVideo(videoToDelete, videoToDeleteObj.videoUrl, videoToDeleteObj.videoPath);
+        await videoService.deleteVideo(videoToDelete, videoToDeleteObj.videoUrl, videoToDeleteObj.videoPath);
         const newVideos = videos.filter(v => v.id !== videoToDelete);
         setVideos(newVideos);
       }

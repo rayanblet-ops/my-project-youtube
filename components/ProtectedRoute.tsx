@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { firebaseUser, isLoading } = useUser();
+  const { appwriteUser, isLoading } = useUser();
 
   if (isLoading) {
     return (
@@ -17,7 +17,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (!firebaseUser) {
+  if (!appwriteUser) {
     return <Navigate to="/login" replace />;
   }
 

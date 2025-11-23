@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { RelatedVideoCard } from '../components/RelatedVideoCard';
-import { ThumbsUp, ThumbsDown, Share2, MoreHorizontal, CheckCircle2, Trash2, User, AlignLeft, MoreVertical, MessageSquarePlus } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Share2, CheckCircle2, Trash2, User, AlignLeft } from 'lucide-react';
 import { Video, Comment } from '../types';
 import { useUser } from '../UserContext';
-import { videoServiceFirestore } from '../firebase/videoServiceFirestore';
-import { commentService } from '../firebase/commentService';
+import { videoService } from '../appwrite/videoService';
+import { commentService } from '../appwrite/commentService';
+import { account } from '../appwrite/config';
 
 export const Watch: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,10 +22,6 @@ export const Watch: React.FC = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
-  
-  // New states for the 3-dots interaction
-  const [isCommentMenuOpen, setIsCommentMenuOpen] = useState(false);
-  const [showCommentInput, setShowCommentInput] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -34,13 +31,23 @@ export const Watch: React.FC = () => {
 
       try {
         // Загружаем видео
-        const found = await videoServiceFirestore.getVideoById(id);
+        const found = await videoService.getVideoById(id);
         if (found) {
           setVideo(found);
-          setLikes(parseInt(found.likes || '0') || 0);
+          const likesCount = parseInt(found.likes || '0') || 0;
+          setLikes(likesCount);
+          
+          // Проверяем, поставил ли текущий пользователь лайк
+          const currentUser = await account.get();
+          if (currentUser && (found as any).likedBy) {
+            const likedBy = (found as any).likedBy as string[];
+            setIsLiked(likedBy.includes(currentUser.$id));
+          } else {
+            setIsLiked(false);
+          }
           
           // Загружаем связанные видео
-          const allVideos = await videoServiceFirestore.getAllVideos();
+          const allVideos = await videoService.getAllVideos();
           setRelatedVideos(allVideos.filter(v => v.id !== id));
         }
 
@@ -53,26 +60,54 @@ export const Watch: React.FC = () => {
     };
 
     loadVideoData();
-    
-    // Reset states on video change
-    setShowCommentInput(false);
-    setIsCommentMenuOpen(false);
   }, [id]);
 
   const handleLike = async () => {
     if (!video) return;
+    
+    try {
+      const currentUser = await account.get();
+      if (!currentUser) {
+        alert('Пожалуйста, войдите в систему, чтобы ставить лайки');
+        return;
+      }
+
+      // Сохраняем текущее состояние для отката при ошибке
+      const previousLikedState = isLiked;
+      const previousLikesCount = likes;
+
+      // Оптимистичное обновление UI
     const newLikedState = !isLiked;
     const newLikesCount = newLikedState ? likes + 1 : likes - 1;
     setIsLiked(newLikedState);
     setLikes(newLikesCount);
     
-    try {
-      await videoServiceFirestore.updateVideo(video.id, { likes: newLikesCount.toString() });
-    } catch (error) {
+      // Обновляем в базе данных
+      const result = await videoService.toggleLike(video.id, currentUser.$id);
+      
+      // Синхронизируем с результатом из базы данных
+      setIsLiked(result.isLiked);
+      setLikes(result.likes);
+    } catch (error: any) {
       console.error('Error updating likes:', error);
       // Откатываем изменения при ошибке
-      setIsLiked(!newLikedState);
-      setLikes(likes);
+      setIsLiked(previousLikedState);
+      setLikes(previousLikesCount);
+      
+      // Более детальное сообщение об ошибке
+      let errorMessage = 'Ошибка при обновлении лайка. Попробуйте еще раз.';
+      
+      if (error.code === 404 || error.message?.includes('not found')) {
+        errorMessage = 'Видео не найдено. Обновите страницу.';
+      } else if (error.code === 401 || error.message?.includes('Unauthorized')) {
+        errorMessage = 'Необходимо войти в систему для постановки лайков.';
+      } else if (error.message?.includes('Unknown attribute') || error.message?.includes('likedBy')) {
+        errorMessage = 'Колонка likedBy не создана в базе данных. См. appwrite/ADD_LIKEDBY_COLUMN.md';
+      } else if (error.message) {
+        errorMessage = `Ошибка: ${error.message}`;
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -99,7 +134,7 @@ export const Watch: React.FC = () => {
 
     if (window.confirm("Вы уверены, что хотите удалить это видео навсегда?")) {
       try {
-        await videoServiceFirestore.deleteVideo(video.id, video.videoUrl, video.videoPath);
+        await videoService.deleteVideo(video.id, video.videoUrl, video.videoPath);
         alert("Видео успешно удалено.");
         navigate('/');
       } catch (error) {
@@ -128,16 +163,10 @@ export const Watch: React.FC = () => {
       
       setComments([newCommentWithId, ...comments]);
       setNewComment('');
-      setShowCommentInput(false);
     } catch (error) {
       console.error('Error adding comment:', error);
       alert('Ошибка при добавлении комментария');
     }
-  };
-
-  const handleEnableCommentInput = () => {
-    setShowCommentInput(true);
-    setIsCommentMenuOpen(false);
   };
 
   if (!video) {
@@ -202,7 +231,6 @@ export const Watch: React.FC = () => {
                </button>
             )}
             
-             <button className="flex items-center justify-center bg-gray-100 dark:bg-[#272727] hover:bg-gray-200 dark:hover:bg-[#3f3f3f] w-9 h-9 rounded-full transition-colors text-black dark:text-white"><MoreHorizontal className="w-5 h-5" /></button>
           </div>
         </div>
 
@@ -222,49 +250,10 @@ export const Watch: React.FC = () => {
                   <AlignLeft className="w-5 h-5" /> Упорядочить
                </button>
              </div>
-
-             {/* 3-Dots Menu for Adding Comment */}
-             <div className="relative z-20">
-                <button 
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsCommentMenuOpen(!isCommentMenuOpen);
-                  }}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-[#272727] rounded-full transition-colors relative z-30"
-                >
-                  <MoreVertical className="w-5 h-5 text-black dark:text-white" />
-                </button>
-
-                {/* Backdrop to close menu when clicking outside */}
-                {isCommentMenuOpen && (
-                   <div 
-                     className="fixed inset-0 z-40 bg-transparent cursor-default"
-                     onClick={() => setIsCommentMenuOpen(false)}
-                   />
-                )}
-
-                {isCommentMenuOpen && !showCommentInput && (
-                  <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[#272727] shadow-xl rounded-lg py-2 w-72 z-50 border border-gray-200 dark:border-[#3f3f3f]">
-                     <button 
-                       type="button"
-                       onClick={(e) => {
-                         e.stopPropagation(); // Prevent backdrop click from firing
-                         handleEnableCommentInput();
-                       }}
-                       className="w-full text-left px-4 py-3 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-[#3f3f3f] flex items-center gap-3 transition-colors"
-                     >
-                        <MessageSquarePlus className="w-5 h-5 text-blue-500" />
-                        <span className="font-medium">Вы хотите оставить комментарий?</span>
-                     </button>
-                  </div>
-                )}
-             </div>
           </div>
 
-          {/* Comment Input Form (Hidden by default, shown after clicking menu item) */}
-          {showCommentInput && (
-            <div className="flex gap-4 mb-8 animate-fade-in">
+          {/* Comment Input Form (Always visible) */}
+          <div className="flex gap-4 mb-8">
                <div className="flex-shrink-0">
                   <img src={user.avatarUrl} className="w-10 h-10 rounded-full object-cover" alt="Your Avatar" />
                </div>
@@ -282,11 +271,10 @@ export const Watch: React.FC = () => {
                         type="button" 
                         onClick={() => {
                             setNewComment('');
-                            setShowCommentInput(false); // Close form
                         }} 
                         className="px-4 py-2 text-sm font-medium text-black dark:text-white hover:bg-gray-100 dark:hover:bg-[#272727] rounded-full transition-colors"
                     >
-                        Отмена
+                        Очистить
                     </button>
                     <button 
                         type="submit" 
@@ -298,7 +286,6 @@ export const Watch: React.FC = () => {
                   </div>
                </form>
             </div>
-          )}
 
           {/* Comments List */}
           <div className="flex flex-col gap-6">
@@ -335,10 +322,6 @@ export const Watch: React.FC = () => {
                           </button>
                        </div>
                     </div>
-                    {/* Optional: Menu for delete/report */}
-                    <button className="opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-100 dark:hover:bg-[#272727] rounded-full h-fit transition-all">
-                         <MoreVertical className="w-4 h-4 text-black dark:text-white" />
-                    </button>
                  </div>
              ))}
           </div>

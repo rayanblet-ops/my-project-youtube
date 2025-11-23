@@ -4,7 +4,7 @@ import { Upload as UploadIcon, X, FileVideo, CheckCircle2, Image as ImageIcon, L
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../UserContext';
 import { Video } from '../types';
-import { videoServiceFirestore } from '../firebase/videoServiceFirestore';
+import { videoService } from '../appwrite/videoService';
 
 export const Upload: React.FC = () => {
   const navigate = useNavigate();
@@ -116,17 +116,8 @@ export const Upload: React.FC = () => {
 
       setProgress(5);
 
-      // Проверяем размер файла
-      const MAX_SIZE = 900 * 1024; // 900KB
-      if (file.size > MAX_SIZE) {
-        alert(`Файл слишком большой (${Math.round(file.size / 1024)}KB). Максимальный размер: ${Math.round(MAX_SIZE / 1024)}KB.\n\nДля больших файлов нужен Firebase Storage (требует upgrade).`);
-        setIsUploading(false);
-        setProgress(0);
-        return;
-      }
-
-      // Загружаем файл в Firestore (как base64)
-      const videoId = await videoServiceFirestore.uploadVideo(file, videoData, (uploadProgress) => {
+      // Загружаем файл в Supabase Storage
+      const videoId = await videoService.uploadVideo(file, videoData, (uploadProgress) => {
         const progress = 5 + (uploadProgress * 0.85);
         setProgress(Math.min(progress, 90));
       });
@@ -143,10 +134,10 @@ export const Upload: React.FC = () => {
       
       let errorMessage = "Ошибка при загрузке видео. Попробуйте еще раз.";
       
-      if (error?.code === 'permission-denied') {
-        errorMessage = "Ошибка: Нет доступа к базе данных. Проверьте правила безопасности Firestore.";
-      } else if (error?.code === 'storage/quota-exceeded') {
-        errorMessage = "Ошибка: Превышен лимит хранилища.";
+      if (error?.code === 401 || error?.message?.includes('permission') || error?.message?.includes('access')) {
+        errorMessage = "Ошибка: Нет доступа к базе данных. Проверьте настройки Appwrite.";
+      } else if (error?.message?.includes('quota') || error?.message?.includes('storage') || error?.code === 413) {
+        errorMessage = "Ошибка: Превышен лимит хранилища или файл слишком большой.";
       } else if (error?.message) {
         errorMessage = `Ошибка: ${error.message}`;
       }

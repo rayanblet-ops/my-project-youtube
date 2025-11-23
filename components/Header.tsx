@@ -4,7 +4,7 @@ import { Menu, Search, Mic, Video as VideoIcon, Bell, Upload, Moon, Sun, LogOut,
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MOCK_NOTIFICATIONS } from '../constants';
 import { useUser } from '../UserContext';
-import { authService } from '../firebase/authService';
+import { authService } from '../appwrite/authService';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -16,7 +16,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isDarkMode, toggl
   const [searchQuery, setSearchQuery] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, firebaseUser } = useUser();
+  const { user, appwriteUser } = useUser();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
@@ -127,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isDarkMode, toggl
             </Link>
         </div>
         
-        {firebaseUser ? (
+        {appwriteUser ? (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}

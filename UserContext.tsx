@@ -2,12 +2,11 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { UserProfile } from './types';
 import { MOCK_USER } from './constants';
-import { authService } from './firebase/authService';
-import { User as FirebaseUser } from 'firebase/auth';
+import { authService, AppwriteUser } from './appwrite/authService';
 
 interface UserContextType {
   user: UserProfile;
-  firebaseUser: FirebaseUser | null;
+  appwriteUser: AppwriteUser | null;
   updateUser: (updatedUser: UserProfile) => void;
   isLoading: boolean;
 }
@@ -16,17 +15,17 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile>(MOCK_USER);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [appwriteUser, setAppwriteUser] = useState<AppwriteUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize Firebase Auth and load user profile
+  // Initialize Appwrite Auth and load user profile
   useEffect(() => {
-    const unsubscribe = authService.onAuthStateChanged(async (firebaseUser) => {
-      setFirebaseUser(firebaseUser);
+    const unsubscribeObj = authService.onAuthStateChanged(async (appwriteUser) => {
+      setAppwriteUser(appwriteUser);
       
-      if (firebaseUser) {
-        // Загружаем профиль пользователя из Firestore
-        const userProfile = await authService.getUserProfile(firebaseUser.uid);
+      if (appwriteUser) {
+        // Загружаем профиль пользователя из базы данных
+        const userProfile = await authService.getUserProfile(appwriteUser.$id);
         if (userProfile) {
           setUser(userProfile);
         } else {
@@ -34,20 +33,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             const newProfile = {
               ...MOCK_USER,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || firebaseUser.uid.substring(0, 8) || MOCK_USER.name,
-              email: firebaseUser.email || MOCK_USER.email,
-              avatarUrl: firebaseUser.photoURL || MOCK_USER.avatarUrl
+              name: appwriteUser.name || appwriteUser.email?.split('@')[0] || appwriteUser.$id.substring(0, 8) || MOCK_USER.name,
+              email: appwriteUser.email || MOCK_USER.email,
+              avatarUrl: MOCK_USER.avatarUrl
             };
-            await authService.setUserProfile(firebaseUser.uid, newProfile);
+            await authService.setUserProfile(appwriteUser.$id, newProfile);
             setUser(newProfile);
           } catch (error: any) {
             console.error('Error creating user profile:', error);
             // Используем временный профиль, если не удалось сохранить
             const tempProfile = {
               ...MOCK_USER,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Пользователь',
-              email: firebaseUser.email || '',
-              avatarUrl: firebaseUser.photoURL || MOCK_USER.avatarUrl
+              name: appwriteUser.name || appwriteUser.email?.split('@')[0] || 'Пользователь',
+              email: appwriteUser.email || '',
+              avatarUrl: MOCK_USER.avatarUrl
             };
             setUser(tempProfile);
           }
@@ -61,18 +60,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribeObj && typeof unsubscribeObj.unsubscribe === 'function') {
+        unsubscribeObj.unsubscribe();
+      }
+    };
   }, []);
 
   const updateUser = async (updatedUser: UserProfile) => {
     setUser(updatedUser);
-    if (firebaseUser) {
-      await authService.setUserProfile(firebaseUser.uid, updatedUser);
+    if (appwriteUser) {
+      await authService.setUserProfile(appwriteUser.$id, updatedUser);
     }
   };
 
   return (
-    <UserContext.Provider value={{ user, firebaseUser, updateUser, isLoading }}>
+    <UserContext.Provider value={{ user, appwriteUser, updateUser, isLoading }}>
       {children}
     </UserContext.Provider>
   );

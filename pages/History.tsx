@@ -4,7 +4,7 @@ import { MOCK_SEARCH_HISTORY } from '../constants';
 import { SearchVideoCard } from '../components/SearchVideoCard';
 import { Search, Trash2, PauseCircle, Settings, History as HistoryIcon, X } from 'lucide-react';
 import { Video } from '../types';
-import { videoServiceFirestore } from '../firebase/videoServiceFirestore';
+import { videoService } from '../appwrite/videoService';
 
 export const History: React.FC = () => {
   const [view, setView] = useState<'watch' | 'search'>('watch');
@@ -17,7 +17,7 @@ export const History: React.FC = () => {
   useEffect(() => {
     const loadVideos = async () => {
       try {
-        const videos = await videoServiceFirestore.getAllVideos();
+        const videos = await videoService.getAllVideos();
         if (videos.length > 0) {
            // Simulate grouping. In real app, check dates.
            // Here we just put all user videos in "Today"

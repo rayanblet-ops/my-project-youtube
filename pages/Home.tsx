@@ -6,7 +6,7 @@ import { VideoCardSkeleton } from '../components/VideoCardSkeleton';
 import { Video } from '../types';
 import { Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { videoServiceFirestore } from '../firebase/videoServiceFirestore';
+import { videoService } from '../appwrite/videoService';
 
 export const Home: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('1');
@@ -18,7 +18,7 @@ export const Home: React.FC = () => {
     const loadVideos = async () => {
       setIsLoading(true);
       try {
-        const videosData = await videoServiceFirestore.getAllVideos();
+        const videosData = await videoService.getAllVideos();
         setVideos(videosData);
       } catch (error) {
         console.error("Failed to load videos", error);
@@ -32,13 +32,13 @@ export const Home: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-[2400px] mx-auto min-h-full flex flex-col">
+    <div className="w-full flex flex-col">
       <CategoryPills 
         selectedCategory={selectedCategory} 
         onSelect={setSelectedCategory} 
       />
 
-      <div className="p-4 pt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 gap-y-8 flex-1">
+      <div className="px-2 sm:px-4 md:px-6 pt-16 sm:pt-20 pb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 gap-y-6 sm:gap-y-8 w-full max-w-full">
         
         {videos.length > 0 ? (
           videos.map((video) => (

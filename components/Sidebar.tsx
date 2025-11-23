@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Compass, PlaySquare, Clock, ThumbsUp, User, Film, Gamepad2, Flame, Music2, Newspaper, Trophy, Settings as SettingsIcon, LayoutDashboard } from 'lucide-react';
+import { Home, Compass, PlaySquare, Clock, ThumbsUp, User, Settings as SettingsIcon, LayoutDashboard } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { SidebarItem } from '../types';
 
@@ -23,13 +23,6 @@ const SECONDARY_ITEMS: SidebarItem[] = [
   { icon: ThumbsUp, label: 'Понравившиеся', path: '/playlist/liked' },
 ];
 
-const EXPLORE_ITEMS: SidebarItem[] = [
-  { icon: Flame, label: 'В тренде', path: '/trending' },
-  { icon: Music2, label: 'Музыка', path: '/trending?category=music' },
-  { icon: Gamepad2, label: 'Видеоигры', path: '/trending?category=gaming' },
-  { icon: Newspaper, label: 'Новости', path: '/trending?category=news' },
-  { icon: Trophy, label: 'Спорт', path: '/trending?category=sports' },
-];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const location = useLocation();
@@ -80,11 +73,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
             <ItemRenderer items={SECONDARY_ITEMS} />
           </div>
           <div className="my-2 border-t border-gray-200 dark:border-[#3f3f3f] mx-2" />
-           <div className="py-2">
-             <h3 className="px-3 mb-2 text-base font-semibold text-black dark:text-yt-text">Навигатор</h3>
-            <ItemRenderer items={EXPLORE_ITEMS} />
-          </div>
-           <div className="my-2 border-t border-gray-200 dark:border-[#3f3f3f] mx-2" />
            <div className="py-2">
             <Link
               to="/settings"

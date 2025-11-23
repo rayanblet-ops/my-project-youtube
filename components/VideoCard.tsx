@@ -17,9 +17,9 @@ export const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
   const displayAvatar = isOwner ? user.avatarUrl : video.channelAvatarUrl;
 
   return (
-    <div className="flex flex-col gap-2 group cursor-pointer">
+    <div className="flex flex-col gap-2 group cursor-pointer w-full">
       {/* Thumbnail Container - Links to Watch */}
-      <Link to={`/watch/${video.id}`} className="relative aspect-video rounded-xl overflow-hidden bg-gray-200 dark:bg-[#202020]">
+      <Link to={`/watch/${video.id}`} className="relative w-full aspect-video rounded-lg sm:rounded-xl overflow-hidden bg-gray-200 dark:bg-[#202020]">
         <img 
           src={video.thumbnailUrl} 
           alt={video.title} 
