@@ -43,44 +43,48 @@ export const Login: React.FC = () => {
       console.error('Auth error:', error);
       let errorMessage = 'Произошла ошибка';
       
-      // Разные сообщения для регистрации и входа
+      const errorMsg = error.message || '';
+      const errorStr = String(errorMsg).toLowerCase();
+      
       if (isLogin) {
-        // Ошибки при входе
-        if (error.code === 401 || error.message?.includes('Invalid credentials') || error.message?.includes('Invalid password') || error.message?.includes('Неверный email или пароль')) {
+        if (errorStr.includes('failed to fetch') || errorStr.includes('network error') || errorStr.includes('networkerror') || error.code === 'ERR_NETWORK' || error.name === 'TypeError') {
+          errorMessage = 'Ошибка подключения. Проверьте интернет-соединение и настройки Appwrite.';
+        } else if (error.code === 401 || errorStr.includes('invalid credentials') || errorStr.includes('invalid password') || errorStr.includes('неверный email или пароль')) {
           errorMessage = 'Пользователь не найден или неверный пароль';
-        } else if (error.code === 400 || error.message?.includes('Invalid email')) {
+        } else if (error.code === 400 || errorStr.includes('invalid email')) {
           errorMessage = 'Неверный формат email';
-        } else if (error.code === 429 || error.message?.includes('too many requests') || error.message?.includes('Слишком много попыток')) {
+        } else if (error.code === 429 || errorStr.includes('too many requests') || errorStr.includes('слишком много попыток')) {
           errorMessage = 'Слишком много попыток. Попробуйте позже';
-        } else if (error.message?.includes('Email не подтвержден') || error.message?.includes('email verification')) {
+        } else if (errorStr.includes('email не подтвержден') || errorStr.includes('email verification')) {
           errorMessage = 'Email не подтвержден. Проверьте почту и подтвердите регистрацию';
-        } else if (error.message?.includes('User not found') || error.message?.includes('пользователь с таким email не найден') || error.message?.includes('Пользователь с таким именем не найден')) {
+        } else if (errorStr.includes('user not found') || errorStr.includes('пользователь с таким email не найден') || errorStr.includes('пользователь с таким именем не найден')) {
           errorMessage = 'Пользователь не найден. Проверьте email или имя пользователя';
-        } else if (error.message?.includes('Нет доступа к базе данных') || error.message?.includes('права доступа')) {
+        } else if (errorStr.includes('нет доступа к базе данных') || errorStr.includes('права доступа')) {
           errorMessage = 'Ошибка доступа. Проверьте настройки Appwrite Dashboard: Settings → Permissions → Read должно быть "Any"';
-        } else if (error.message?.includes('База данных или коллекция не найдена')) {
+        } else if (errorStr.includes('база данных или коллекция не найдена')) {
           errorMessage = 'База данных не настроена. Проверьте настройки Appwrite.';
         } else {
-          errorMessage = error.message || 'Произошла ошибка при входе';
+          errorMessage = errorMsg || 'Произошла ошибка при входе';
         }
       } else {
-        // Ошибки при регистрации
-        if (error.code === 409 || error.message?.includes('already exists') || error.message?.includes('already registered')) {
+        if (errorStr.includes('failed to fetch') || errorStr.includes('network error') || errorStr.includes('networkerror') || error.code === 'ERR_NETWORK' || error.name === 'TypeError') {
+          errorMessage = 'Ошибка подключения. Проверьте интернет-соединение и настройки Appwrite.';
+        } else if (error.code === 409 || errorStr.includes('already exists') || errorStr.includes('already registered')) {
           errorMessage = 'Этот email уже используется';
         } else if (error.code === 400) {
-          if (error.message?.includes('Invalid email')) {
+          if (errorStr.includes('invalid email')) {
             errorMessage = 'Неверный формат email';
-          } else if (error.message?.includes('Password') || error.message?.includes('password')) {
+          } else if (errorStr.includes('password')) {
             errorMessage = 'Пароль должен содержать минимум 8 символов';
           } else {
             errorMessage = 'Проверьте правильность введенных данных';
           }
-        } else if (error.message?.includes('Password') || error.message?.includes('password')) {
+        } else if (errorStr.includes('password')) {
           errorMessage = 'Пароль должен содержать минимум 8 символов';
-        } else if (error.message?.includes('too many requests')) {
+        } else if (errorStr.includes('too many requests')) {
           errorMessage = 'Слишком много попыток. Попробуйте позже';
         } else {
-          errorMessage = error.message || 'Произошла ошибка при регистрации';
+          errorMessage = errorMsg || 'Произошла ошибка при регистрации';
         }
       }
       

@@ -136,18 +136,19 @@ export const authService = {
             throw new Error('Не удалось найти email пользователя в профиле');
           }
         } catch (searchError: any) {
+          const searchMsg = String(searchError.message || '').toLowerCase();
+          if (searchMsg.includes('failed to fetch') || searchMsg.includes('network error') || searchError.code === 'ERR_NETWORK' || searchError.name === 'TypeError') {
+            throw new Error('Ошибка подключения к серверу. Проверьте интернет-соединение.');
+          }
           if (searchError.code === 401 || searchError.code === 403) {
             throw new Error('Нет доступа к базе данных. Проверьте настройки прав доступа в Appwrite Dashboard: Settings → Permissions → Read должно быть "Any" или "Users".');
           }
-          
-          if (searchError.code === 404 || searchError.message?.includes('not found')) {
+          if (searchError.code === 404 || searchMsg.includes('not found')) {
             throw new Error('База данных или коллекция не найдена. Проверьте настройки Appwrite.');
           }
-          
-          if (searchError.message?.includes('не найден')) {
+          if (searchMsg.includes('не найден')) {
             throw searchError;
           }
-          
           throw new Error(`Ошибка поиска пользователя: ${searchError.message || 'Неизвестная ошибка'}`);
         }
       }
@@ -162,8 +163,13 @@ export const authService = {
       return user;
     } catch (error: any) {
       console.error('Error signing in:', error);
-      const errorMessage = error.message || '';
+      const errorMessage = String(error.message || '').toLowerCase();
       const errorCode = error.code;
+      
+      if (errorMessage.includes('failed to fetch') || errorMessage.includes('network error') || errorMessage.includes('networkerror') || error.code === 'ERR_NETWORK' || error.name === 'TypeError') {
+        throw new Error('Ошибка подключения к серверу. Проверьте интернет-соединение и настройки Appwrite.');
+      }
+      
       if (errorCode === 401) {
         if (errorMessage.includes('session is active') || errorMessage.includes('session is prohibited')) {
           try {
@@ -181,15 +187,15 @@ export const authService = {
             }
           }
         }
-        if (errorMessage.includes('email') || errorMessage.includes('password') || errorMessage.includes('Invalid credentials')) {
+        if (errorMessage.includes('email') || errorMessage.includes('password') || errorMessage.includes('invalid credentials')) {
           throw new Error('Неверный email/имя пользователя или пароль');
         }
         throw new Error('Ошибка авторизации. Проверьте email/имя пользователя и пароль');
       } else if (errorCode === 429) {
         throw new Error('Слишком много попыток. Подождите немного и попробуйте снова');
-      } else if (errorMessage.includes('email verification') || errorMessage.includes('Email not verified')) {
+      } else if (errorMessage.includes('email verification') || errorMessage.includes('email not verified')) {
         throw new Error('Email не подтвержден. Проверьте почту и подтвердите регистрацию');
-      } else if (errorMessage.includes('User not found') || errorMessage.includes('user not found')) {
+      } else if (errorMessage.includes('user not found')) {
         throw new Error('Пользователь с таким email не найден');
       }
       
