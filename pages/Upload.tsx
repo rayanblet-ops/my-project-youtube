@@ -127,7 +127,7 @@ export const Upload: React.FC = () => {
 
       // Небольшая задержка для показа 100%
       setTimeout(() => {
-        navigate('/');
+        navigate('/home');
       }, 500);
     } catch (error: any) {
       console.error('Error uploading video:', error);

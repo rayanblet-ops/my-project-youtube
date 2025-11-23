@@ -7,7 +7,13 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const userContext = useUser();
+  let userContext;
+  try {
+    userContext = useUser();
+  } catch {
+    return <Navigate to="/" replace />;
+  }
+  
   const { appwriteUser, isLoading } = userContext;
 
   if (isLoading) {
@@ -19,7 +25,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!appwriteUser) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

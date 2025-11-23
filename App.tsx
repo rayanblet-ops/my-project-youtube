@@ -19,6 +19,7 @@ import { History } from './pages/History';
 import { Live } from './pages/Live';
 import { Shorts } from './pages/Shorts';
 import { Login } from './pages/Login';
+import { Welcome } from './pages/Welcome';
 import { UserProvider } from './UserContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -76,8 +77,10 @@ function App() {
       <HashRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Welcome />} />
+          <Route path="/welcome" element={<Welcome />} />
           <Route 
-            path="/" 
+            path="/home" 
             element={
               <ProtectedRoute>
                 <Layout 

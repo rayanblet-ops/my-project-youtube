@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isDarkMode, toggl
         >
           <Menu className="w-6 h-6" />
         </button>
-        <Link to="/" className="flex items-center gap-1">
+        <Link to="/home" className="flex items-center gap-1">
           <div className="relative flex items-center justify-center bg-red-600 rounded-lg w-8 h-6">
             <div className="w-0 h-0 border-t-[3px] border-t-transparent border-l-[6px] border-l-white border-b-[3px] border-b-transparent ml-0.5"></div>
           </div>

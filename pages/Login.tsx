@@ -22,7 +22,7 @@ export const Login: React.FC = () => {
       if (isLogin) {
         // Вход
         await authService.signIn(email, password);
-        navigate('/');
+        navigate('/home');
       } else {
         // Регистрация
         if (!displayName.trim()) {
@@ -37,7 +37,7 @@ export const Login: React.FC = () => {
           return;
         }
         await authService.signUp(email, password, displayName);
-        navigate('/');
+        navigate('/welcome');
       }
     } catch (error: any) {
       console.error('Auth error:', error);

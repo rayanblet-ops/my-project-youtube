@@ -136,7 +136,7 @@ export const Watch: React.FC = () => {
       try {
         await videoService.deleteVideo(video.id, video.videoUrl, video.videoPath);
         alert("Видео успешно удалено.");
-        navigate('/');
+        navigate('/home');
       } catch (error) {
         console.error('Error deleting video:', error);
         alert("Ошибка при удалении видео.");
