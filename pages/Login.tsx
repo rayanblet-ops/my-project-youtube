@@ -30,6 +30,12 @@ export const Login: React.FC = () => {
           setIsLoading(false);
           return;
         }
+        // Проверяем, что введен email (не имя пользователя)
+        if (!email.includes('@')) {
+          setError('При регистрации необходимо указать email');
+          setIsLoading(false);
+          return;
+        }
         await authService.signUp(email, password, displayName);
         navigate('/');
       }
@@ -48,8 +54,12 @@ export const Login: React.FC = () => {
           errorMessage = 'Слишком много попыток. Попробуйте позже';
         } else if (error.message?.includes('Email не подтвержден') || error.message?.includes('email verification')) {
           errorMessage = 'Email не подтвержден. Проверьте почту и подтвердите регистрацию';
-        } else if (error.message?.includes('User not found') || error.message?.includes('пользователь с таким email не найден')) {
-          errorMessage = 'Пользователь с таким email не найден';
+        } else if (error.message?.includes('User not found') || error.message?.includes('пользователь с таким email не найден') || error.message?.includes('Пользователь с таким именем не найден')) {
+          errorMessage = 'Пользователь не найден. Проверьте email или имя пользователя';
+        } else if (error.message?.includes('Нет доступа к базе данных') || error.message?.includes('права доступа')) {
+          errorMessage = 'Ошибка доступа. Проверьте настройки Appwrite Dashboard: Settings → Permissions → Read должно быть "Any"';
+        } else if (error.message?.includes('База данных или коллекция не найдена')) {
+          errorMessage = 'База данных не настроена. Проверьте настройки Appwrite.';
         } else {
           errorMessage = error.message || 'Произошла ошибка при входе';
         }
@@ -123,16 +133,20 @@ export const Login: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-[#aaa] mb-2">
-                Email
+                {isLogin ? 'Email или имя пользователя' : 'Email'}
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                {isLogin ? (
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                ) : (
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                )}
                 <input
-                  type="email"
+                  type={isLogin ? 'text' : 'email'}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-[#3f3f3f] rounded-lg bg-white dark:bg-[#272727] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="your@email.com"
+                  placeholder={isLogin ? 'email@example.com или имя пользователя' : 'your@email.com'}
                   required
                 />
               </div>

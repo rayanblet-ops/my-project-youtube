@@ -69,8 +69,8 @@ export const Studio: React.FC = () => {
     if (window.confirm("Удалить этот комментарий?")) {
         try {
           await commentService.deleteComment(commentId);
-          const updatedComments = comments.filter(c => c.id !== commentId);
-          setComments(updatedComments);
+        const updatedComments = comments.filter(c => c.id !== commentId);
+        setComments(updatedComments);
         } catch (error) {
           console.error('Error deleting comment:', error);
           alert('Ошибка при удалении комментария');

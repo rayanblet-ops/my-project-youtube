@@ -79,12 +79,14 @@ function App() {
           <Route 
             path="/" 
             element={
-              <Layout 
-                isSidebarOpen={isSidebarOpen} 
-                toggleSidebar={toggleSidebar}
-                isDarkMode={isDarkMode}
-                toggleTheme={toggleTheme}
-              />
+              <ProtectedRoute>
+                <Layout 
+                  isSidebarOpen={isSidebarOpen} 
+                  toggleSidebar={toggleSidebar}
+                  isDarkMode={isDarkMode}
+                  toggleTheme={toggleTheme}
+                />
+              </ProtectedRoute>
             }
           >
             <Route index element={<Home />} />
@@ -96,9 +98,9 @@ function App() {
             <Route path="subscriptions" element={<Subscriptions />} />
             <Route path="library" element={<Library />} />
             <Route path="playlist/:id" element={<PlaylistDetail />} />
-            <Route path="upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
-            <Route path="settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
+            <Route path="upload" element={<Upload />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="studio" element={<Studio />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="history" element={<History />} />
             <Route path="live/:id" element={<Live />} />

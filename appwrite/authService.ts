@@ -1,27 +1,18 @@
 import { account, databases, DATABASE_ID, USERS_COLLECTION_ID } from './config';
 import { UserProfile } from '../types';
-import { Models, ID } from 'appwrite';
+import { Models, ID, Query } from 'appwrite';
 
 export type AppwriteUser = Models.User<Models.Preferences>;
 
 export const authService = {
-  // Регистрация с email/password
   async signUp(email: string, password: string, displayName: string): Promise<AppwriteUser> {
     try {
-      // Удаляем активную сессию, если есть
       try {
         await account.deleteSession('current');
-      } catch {
-        // Игнорируем ошибку, если сессии нет
-      }
+      } catch {}
 
-      // Создаем аккаунт в Appwrite
       const user = await account.create(ID.unique(), email, password, displayName);
-
-      // Создаем сессию для автоматического входа
       await account.createEmailPasswordSession(email, password);
-
-      // Создаем профиль в базе данных
       const profile: UserProfile = {
         name: displayName,
         handle: `@${displayName.toLowerCase().replace(/\s+/g, '_')}`,
@@ -49,8 +40,6 @@ export const authService = {
       };
 
       await this.setUserProfile(user.$id, profile);
-
-      // Получаем обновленные данные пользователя
       return await account.get();
     } catch (error: any) {
       console.error('Error signing up:', error);
@@ -58,20 +47,112 @@ export const authService = {
     }
   },
 
-  // Вход с email/password
-  async signIn(email: string, password: string): Promise<AppwriteUser> {
+  async signIn(emailOrUsername: string, password: string): Promise<AppwriteUser> {
     try {
-      // Удаляем активную сессию, если есть
       try {
         await account.deleteSession('current');
-      } catch {
-        // Игнорируем ошибку, если сессии нет
+      } catch {}
+
+      const isEmail = emailOrUsername.includes('@');
+      let userEmail = emailOrUsername;
+
+      if (!isEmail) {
+        try {
+          const searchTerm = emailOrUsername.trim();
+          let foundUser: any = null;
+
+          try {
+            const users = await databases.listDocuments(
+              DATABASE_ID,
+              USERS_COLLECTION_ID,
+              [Query.equal('name', searchTerm)]
+            );
+            if (users.documents.length > 0) {
+              foundUser = users.documents[0];
+            }
+          } catch {}
+
+          if (!foundUser) {
+            try {
+              const users = await databases.listDocuments(
+                DATABASE_ID,
+                USERS_COLLECTION_ID,
+                [Query.search('name', searchTerm)]
+              );
+              if (users.documents.length > 0) {
+                const exactMatch = users.documents.find((doc: any) => {
+                  const docName = (doc.name || '').trim();
+                  return docName.toLowerCase() === searchTerm.toLowerCase();
+                });
+                foundUser = exactMatch || users.documents[0];
+              }
+            } catch {}
+          }
+
+          if (!foundUser) {
+            try {
+              const handleToSearch = searchTerm.startsWith('@') 
+                ? searchTerm.substring(1) 
+                : searchTerm;
+              const handleWithAt = `@${handleToSearch.toLowerCase().replace(/\s+/g, '_')}`;
+              
+              const users = await databases.listDocuments(
+                DATABASE_ID,
+                USERS_COLLECTION_ID,
+                [Query.equal('handle', handleWithAt)]
+              );
+              
+              if (users.documents.length > 0) {
+                foundUser = users.documents[0];
+              }
+            } catch {}
+          }
+
+          if (!foundUser) {
+            try {
+              const allUsers = await databases.listDocuments(
+                DATABASE_ID,
+                USERS_COLLECTION_ID,
+                []
+              );
+              
+              foundUser = allUsers.documents.find((doc: any) => {
+                const docName = (doc.name || '').toLowerCase().trim();
+                const docHandle = (doc.handle || '').toLowerCase().trim();
+                const searchLower = searchTerm.toLowerCase().trim();
+                return docName === searchLower || docHandle === searchLower || docHandle === `@${searchLower}`;
+              });
+            } catch {}
+          }
+
+          if (!foundUser) {
+            throw new Error('Пользователь с таким именем не найден. Проверьте правильность имени или войдите по email.');
+          }
+
+          const userProfile = foundUser as unknown as UserProfile;
+          userEmail = userProfile.email;
+
+          if (!userEmail) {
+            throw new Error('Не удалось найти email пользователя в профиле');
+          }
+        } catch (searchError: any) {
+          if (searchError.code === 401 || searchError.code === 403) {
+            throw new Error('Нет доступа к базе данных. Проверьте настройки прав доступа в Appwrite Dashboard: Settings → Permissions → Read должно быть "Any" или "Users".');
+          }
+          
+          if (searchError.code === 404 || searchError.message?.includes('not found')) {
+            throw new Error('База данных или коллекция не найдена. Проверьте настройки Appwrite.');
+          }
+          
+          if (searchError.message?.includes('не найден')) {
+            throw searchError;
+          }
+          
+          throw new Error(`Ошибка поиска пользователя: ${searchError.message || 'Неизвестная ошибка'}`);
+        }
       }
 
-      // Создаем сессию
-      const session = await account.createEmailPasswordSession(email, password);
-      
-      // Получаем данные пользователя
+      const session = await account.createEmailPasswordSession(userEmail, password);
       const user = await account.get();
       
       if (!user) {
@@ -81,25 +162,19 @@ export const authService = {
       return user;
     } catch (error: any) {
       console.error('Error signing in:', error);
-      
-      // Детальная обработка ошибок Appwrite
       const errorMessage = error.message || '';
       const errorCode = error.code;
-      
-      // Проверяем различные типы ошибок
       if (errorCode === 401) {
         if (errorMessage.includes('session is active') || errorMessage.includes('session is prohibited')) {
-          // Если сессия уже активна, просто получаем пользователя
           try {
             const user = await account.get();
             if (user) {
               return user;
             }
           } catch {
-            // Если не удалось получить пользователя, пробуем удалить сессию и создать новую
             try {
               await account.deleteSession('current');
-              const session = await account.createEmailPasswordSession(email, password);
+              const session = await account.createEmailPasswordSession(emailOrUsername.includes('@') ? emailOrUsername : emailOrUsername, password);
               return await account.get();
             } catch (retryError) {
               throw new Error('Неверный email или пароль');
@@ -107,9 +182,9 @@ export const authService = {
           }
         }
         if (errorMessage.includes('email') || errorMessage.includes('password') || errorMessage.includes('Invalid credentials')) {
-          throw new Error('Неверный email или пароль');
+          throw new Error('Неверный email/имя пользователя или пароль');
         }
-        throw new Error('Ошибка авторизации. Проверьте email и пароль');
+        throw new Error('Ошибка авторизации. Проверьте email/имя пользователя и пароль');
       } else if (errorCode === 429) {
         throw new Error('Слишком много попыток. Подождите немного и попробуйте снова');
       } else if (errorMessage.includes('email verification') || errorMessage.includes('Email not verified')) {
@@ -122,24 +197,18 @@ export const authService = {
     }
   },
 
-  // Вход через Google OAuth
   async signInWithGoogle(): Promise<void> {
     try {
-      // Appwrite автоматически обработает OAuth редирект
-      // Первый параметр - success URL (куда вернуться после успешной авторизации)
-      // Второй параметр - failure URL (куда вернуться при ошибке)
-      account.createOAuth2Session('google', `${window.location.origin}/`, `${window.location.origin}/login`);
+      account.createOAuth2Session('google' as any, `${window.location.origin}/`, `${window.location.origin}/login`);
     } catch (error: any) {
       console.error('Error signing in with Google:', error);
-      // Проверяем специфичные ошибки
       if (error.message?.includes('OAuth client was not found') || error.message?.includes('invalid_client')) {
-        throw new Error('Google OAuth не настроен в Appwrite. Пожалуйста, настройте Google провайдер в Appwrite Dashboard: Auth → Providers → Google. См. appwrite/GOOGLE_OAUTH_SETUP.md');
+        throw new Error('Google OAuth не настроен в Appwrite. Пожалуйста, настройте Google провайдер в Appwrite Dashboard: Auth → Providers → Google.');
       }
       throw error;
     }
   },
 
-  // Анонимная авторизация
   async signInAnonymously(): Promise<AppwriteUser> {
     try {
       const user = await account.createAnonymousSession();
@@ -150,7 +219,6 @@ export const authService = {
     }
   },
 
-  // Выход
   async signOut(): Promise<void> {
     try {
       await account.deleteSession('current');
@@ -160,7 +228,6 @@ export const authService = {
     }
   },
 
-  // Получить профиль пользователя
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     try {
       const document = await databases.getDocument(
@@ -179,11 +246,8 @@ export const authService = {
     }
   },
 
-  // Создать или обновить профиль пользователя
   async setUserProfile(userId: string, profile: UserProfile): Promise<void> {
     try {
-      // Сохраняем только основные атрибуты, которые точно есть в базе данных
-      // Исключаем сложные объекты (notifications, playback, privacy), если их нет в схеме
       const basicProfile: any = {
         name: profile.name,
         handle: profile.handle,
@@ -195,12 +259,11 @@ export const authService = {
         theme: profile.theme,
       };
 
-      // Пробуем сохранить с дополнительными полями
       try {
         await databases.createDocument(
           DATABASE_ID,
           USERS_COLLECTION_ID,
-          userId, // Используем userId как document ID
+          userId,
           {
             ...basicProfile,
             notifications: typeof profile.notifications === 'object' ? JSON.stringify(profile.notifications) : profile.notifications,
@@ -209,7 +272,6 @@ export const authService = {
           }
         );
       } catch (createError: any) {
-        // Если ошибка из-за отсутствующих атрибутов, сохраняем только основные
         if (createError.message?.includes('Unknown attribute') || createError.code === 400) {
           await databases.createDocument(
             DATABASE_ID,
@@ -222,10 +284,8 @@ export const authService = {
         }
       }
     } catch (error: any) {
-      // Если документ уже существует, обновляем его
       if (error.code === 409) {
         try {
-          // Пробуем обновить со всеми полями
           await databases.updateDocument(
             DATABASE_ID,
             USERS_COLLECTION_ID,
@@ -245,7 +305,6 @@ export const authService = {
             }
           );
         } catch (updateError: any) {
-          // Если ошибка из-за отсутствующих атрибутов, обновляем только основные
           if (updateError.message?.includes('Unknown attribute') || updateError.code === 400) {
             await databases.updateDocument(
               DATABASE_ID,
@@ -268,15 +327,11 @@ export const authService = {
         }
       } else {
         console.error('Error setting user profile:', error);
-        // Не бросаем ошибку, чтобы не блокировать регистрацию/вход
-        // Профиль можно будет создать позже
       }
     }
   },
 
-  // Подписка на изменения состояния авторизации
   onAuthStateChanged(callback: (user: AppwriteUser | null) => void) {
-    // Проверяем текущую сессию
     account.get()
       .then((user) => {
         callback(user);
@@ -285,8 +340,6 @@ export const authService = {
         callback(null);
       });
 
-    // Appwrite не имеет встроенного real-time для auth, поэтому используем polling
-    // или можно использовать события страницы
     const checkAuth = async () => {
       try {
         const user = await account.get();
@@ -296,7 +349,6 @@ export const authService = {
       }
     };
 
-    // Проверяем при загрузке страницы и при фокусе
     window.addEventListener('focus', checkAuth);
 
     return {
@@ -306,7 +358,6 @@ export const authService = {
     };
   },
 
-  // Получить текущего пользователя
   async getCurrentUser(): Promise<AppwriteUser | null> {
     try {
       return await account.get();

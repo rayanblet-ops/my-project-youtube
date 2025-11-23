@@ -7,7 +7,8 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { appwriteUser, isLoading } = useUser();
+  const userContext = useUser();
+  const { appwriteUser, isLoading } = userContext;
 
   if (isLoading) {
     return (

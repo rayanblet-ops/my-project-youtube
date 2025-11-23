@@ -16,7 +16,17 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isDarkMode, toggl
   const [searchQuery, setSearchQuery] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, appwriteUser } = useUser();
+  
+  // Безопасное получение пользователя
+  let userContext;
+  try {
+    userContext = useUser();
+  } catch (error) {
+    userContext = null;
+  }
+  
+  const user = userContext?.user || null;
+  const appwriteUser = userContext?.appwriteUser || null;
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
@@ -134,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isDarkMode, toggl
               className="p-1 sm:px-1 sm:py-1 flex items-center gap-2 text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-[#303030] sm:border-transparent hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
             >
               <div className="w-8 h-8 rounded-full overflow-hidden">
-                <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                <img src={user?.avatarUrl || 'https://placehold.co/32x32/333/fff?text=?'} alt={user?.name || 'User'} className="w-full h-full object-cover" />
               </div>
             </button>
             
@@ -146,11 +156,11 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isDarkMode, toggl
                   className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3f3f3f] transition-colors"
                 >
                   <div className="w-10 h-10 rounded-full overflow-hidden">
-                    <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                    <img src={user?.avatarUrl || 'https://placehold.co/40x40/333/fff?text=?'} alt={user?.name || 'User'} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-black dark:text-white">{user.name}</div>
-                    <div className="text-xs text-gray-500 dark:text-[#aaa]">{user.handle}</div>
+                    <div className="text-sm font-medium text-black dark:text-white">{user?.name || 'Пользователь'}</div>
+                    <div className="text-xs text-gray-500 dark:text-[#aaa]">{user?.handle || '@user'}</div>
                   </div>
                 </Link>
                 <div className="border-t border-gray-200 dark:border-[#3f3f3f] my-2"></div>

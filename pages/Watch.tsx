@@ -102,7 +102,7 @@ export const Watch: React.FC = () => {
       } else if (error.code === 401 || error.message?.includes('Unauthorized')) {
         errorMessage = 'Необходимо войти в систему для постановки лайков.';
       } else if (error.message?.includes('Unknown attribute') || error.message?.includes('likedBy')) {
-        errorMessage = 'Колонка likedBy не создана в базе данных. См. appwrite/ADD_LIKEDBY_COLUMN.md';
+        errorMessage = 'Колонка likedBy не создана в базе данных.';
       } else if (error.message) {
         errorMessage = `Ошибка: ${error.message}`;
       }
